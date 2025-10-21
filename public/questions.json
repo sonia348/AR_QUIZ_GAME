@@ -1,0 +1,52 @@
+[
+  {
+    "question": "Which is a fruit?",
+    "correctAnswer": "Apple",
+    "wrongAnswers": ["Car", "Chair", "Shoe", "Table", "Guitar", "Phone", "Bottle", "Spoon"]
+  },
+  {
+    "question": "Select the animal",
+    "correctAnswer": "Cat",
+    "wrongAnswers": ["Bus", "Pen", "Lamp", "Book", "Watch", "Key", "Cup", "Bottle"]
+  },
+  { 
+    "question": "Which is a color name?",
+    "correctAnswer": "Blue",
+    "wrongAnswers": ["Circle", "Paper", "Stone", "Door", "Road", "Desk", "Leaf", "Window"]
+  },
+  {
+    "question": "Which is a vehicle?",
+    "correctAnswer": "Bicycle",
+    "wrongAnswers": ["Tree", "Cloud", "River", "Mountain", "Star", "Ocean", "Fire", "Wind"]
+  },
+  {
+    "question": "Select a shape",
+    "correctAnswer": "Square",
+    "wrongAnswers": ["Happy", "Loud", "Fast", "Slow", "Heavy", "Light", "Soft", "Hard"]
+  },
+  {
+    "question": "Which is a day of the week?",
+    "correctAnswer": "Monday",
+    "wrongAnswers": ["January", "Summer", "Morning", "Noon", "Night", "Dawn", "Dusk", "Evening"]
+  },
+  {
+    "question": "Select the bird",
+    "correctAnswer": "Sparrow",
+    "wrongAnswers": ["Lion", "Tiger", "Elephant", "Monkey", "Snake", "Fish", "Frog", "Lizard"]
+  },
+  {
+    "question": "Which is a vegetable?",
+    "correctAnswer": "Carrot",
+    "wrongAnswers": ["Mango", "Orange", "Banana", "Grapes", "Strawberry", "Peach", "Plum", "Cherry"]
+  },
+  {
+    "question": "Select the number",
+    "correctAnswer": "Seven",
+    "wrongAnswers": ["Red", "Big", "Fast", "Tall", "Wide", "Deep", "Long", "Short"]
+  },
+  {
+    "question": "Which is a planet?",
+    "correctAnswer": "Mars",
+    "wrongAnswers": ["Sun", "Moon", "Star", "Comet", "Asteroid", "Galaxy", "Cloud", "Rainbow"]
+  }
+]
