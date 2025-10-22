@@ -36,12 +36,14 @@ let lastPointer = null;
 let showReadingCountdown = false;
 let readingCountdownValue = 0;
 let currentUsername = '';
+let feedbackAnimationActive = false;
+let feedbackAnimationId = null;
 
 // Timer Variables
 let readingTimer = null;
 let answerTimer = null;
 let readingTime = 3; // 3 seconds to read question
-let answerTime = 5; // 5 seconds to answer
+let answerTime = 15; // 5 seconds to answer
 let currentAnswerTime = 5;
 
 // Question Data
@@ -199,13 +201,18 @@ function computeBoxes() {
   const padding = 12;
   const cols = 3;
   const rows = 3;
+  
+  // Adjust top margin based on screen size
+  const isMobile = window.innerWidth <= 768;
+  const topMargin = isMobile ? 120 : 180;
+  
   const boxW = (appWidth - padding * (cols + 1)) / cols;
-  const boxH = (appHeight - 120 - padding * (rows + 1)) / rows;
+  const boxH = (appHeight - topMargin - padding * (rows + 1)) / rows;
   
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       const x = padding + c * (boxW + padding);
-      const y = 120 + padding + r * (boxH + padding);
+      const y = topMargin + padding + r * (boxH + padding);
       boxes.push({ x, y, w: boxW, h: boxH, label: "", isCorrect: false });
     }
   }
@@ -213,6 +220,11 @@ function computeBoxes() {
 
 // Draw overlay
 function drawOverlay(pointer) {
+  // Don't draw if feedback animation is active
+  if (feedbackAnimationActive) {
+    return;
+  }
+  
   resizeCanvasToDisplaySize();
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   
@@ -290,7 +302,22 @@ function drawOverlay(pointer) {
       
       // Label - bigger and more colorful for kids
       ctx.fillStyle = isHovered ? '#ffff00' : 'white';
-      ctx.font = 'bold 28px Inter, system-ui, Arial';
+      
+      // Adjust font size based on screen width and text length
+      const isMobile = window.innerWidth <= 768;
+      const label = b.label || '';
+      const maxWidth = b.w - 20; // Padding
+      
+      // Start with initial font size
+      let fontSize = isMobile ? 18 : 28;
+      ctx.font = `bold ${fontSize}px Inter, system-ui, Arial`;
+      
+      // Reduce font size until text fits
+      while (ctx.measureText(label).width > maxWidth && fontSize > 10) {
+        fontSize -= 1;
+        ctx.font = `bold ${fontSize}px Inter, system-ui, Arial`;
+      }
+      
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       
@@ -300,7 +327,46 @@ function drawOverlay(pointer) {
       ctx.shadowOffsetX = 2;
       ctx.shadowOffsetY = 2;
       
-      ctx.fillText(b.label || '', b.x + b.w / 2, b.y + b.h / 2);
+      // Check if still too long - try word wrap
+      if (ctx.measureText(label).width > maxWidth) {
+        const words = label.split(' ');
+        if (words.length > 1) {
+          // Try to split into two lines
+          let line1 = '';
+          let line2 = '';
+          let midPoint = Math.ceil(words.length / 2);
+          
+          line1 = words.slice(0, midPoint).join(' ');
+          line2 = words.slice(midPoint).join(' ');
+          
+          // Check if lines fit
+          const line1Width = ctx.measureText(line1).width;
+          const line2Width = ctx.measureText(line2).width;
+          
+          if (line1Width <= maxWidth && line2Width <= maxWidth) {
+            // Both lines fit, draw them
+            ctx.fillText(line1, b.x + b.w / 2, b.y + b.h / 2 - fontSize * 0.6);
+            ctx.fillText(line2, b.x + b.w / 2, b.y + b.h / 2 + fontSize * 0.6);
+          } else {
+            // Still too long, truncate with ellipsis
+            let truncated = label;
+            while (ctx.measureText(truncated + '...').width > maxWidth && truncated.length > 0) {
+              truncated = truncated.slice(0, -1);
+            }
+            ctx.fillText(truncated + '...', b.x + b.w / 2, b.y + b.h / 2);
+          }
+        } else {
+          // Single long word - truncate with ellipsis
+          let truncated = label;
+          while (ctx.measureText(truncated + '...').width > maxWidth && truncated.length > 0) {
+            truncated = truncated.slice(0, -1);
+          }
+          ctx.fillText(truncated + (truncated !== label ? '...' : ''), b.x + b.w / 2, b.y + b.h / 2);
+        }
+      } else {
+        // Text fits, draw normally
+        ctx.fillText(label, b.x + b.w / 2, b.y + b.h / 2);
+      }
       
       // Reset shadow
       ctx.shadowColor = 'transparent';
@@ -460,6 +526,16 @@ function showQuestion() {
     return;
   }
   
+  // Cancel any previous feedback animation and reset state
+  if (feedbackAnimationId) {
+    cancelAnimationFrame(feedbackAnimationId);
+    feedbackAnimationId = null;
+  }
+  feedbackAnimationActive = false;
+  
+  // Clear canvas completely
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
   const question = QUESTIONS[questionIndex];
   
   // Show question with slide-up animation
@@ -495,6 +571,13 @@ function showQuestion() {
 
 // Show answer options after reading time
 function showAnswerOptions(question) {
+  // Ensure feedback animation is stopped
+  feedbackAnimationActive = false;
+  if (feedbackAnimationId) {
+    cancelAnimationFrame(feedbackAnimationId);
+    feedbackAnimationId = null;
+  }
+  
   // Fill boxes with answers
   for (let i = 0; i < 9; i++) {
     boxes[i].label = question.answers[i] || "";
@@ -514,6 +597,9 @@ function showAnswerOptions(question) {
   currentAnswerTime = answerTime;
   timerBar.innerText = `${currentAnswerTime}s`;
   timerBar.classList.remove('hidden');
+  
+  // Force immediate redraw of the canvas with new options
+  drawOverlay(lastPointer);
   
   answerTimer = setInterval(() => {
     currentAnswerTime--;
@@ -583,24 +669,22 @@ function showFeedback(isCorrect, selectedIndex) {
     }
   }
   
-  // Flash the selected box (if any)
-  if (selectedIndex !== -1) {
-    const box = boxes[selectedIndex];
-    const color = isCorrect ? 'rgba(46,224,110,0.9)' : 'rgba(255,92,122,0.95)';
-    
-    ctx.save();
-    ctx.fillStyle = color;
-    roundRect(ctx, box.x, box.y, box.w, box.h, 10, true, false);
-    ctx.restore();
+  // Cancel any previous feedback animation
+  if (feedbackAnimationId) {
+    cancelAnimationFrame(feedbackAnimationId);
+    feedbackAnimationId = null;
   }
   
   // Always show the correct answer in green
   if (correctIndex !== -1) {
     const correctBox = boxes[correctIndex];
     
+    // Set feedback animation active to prevent normal drawing
+    feedbackAnimationActive = true;
+    
     // Animate the correct answer box
     let animationStart = performance.now();
-    let animationDuration = 1500; // 1.5 seconds
+    let animationDuration = 2000; // 2 seconds
     
     function animateCorrectBox(timestamp) {
       let elapsed = timestamp - animationStart;
@@ -623,14 +707,27 @@ function showFeedback(isCorrect, selectedIndex) {
           roundRect(ctx, b.x, b.y, b.w, b.h, 10, true, false);
           
           ctx.fillStyle = 'white';
-          ctx.font = 'bold 28px Inter, system-ui, Arial';
+          
+          // Dynamic font sizing for feedback animation
+          const isMobile = window.innerWidth <= 768;
+          const label = b.label || '';
+          const maxWidth = b.w - 20;
+          let fontSize = isMobile ? 18 : 28;
+          ctx.font = `bold ${fontSize}px Inter, system-ui, Arial`;
+          
+          // Reduce font size until text fits
+          while (ctx.measureText(label).width > maxWidth && fontSize > 10) {
+            fontSize -= 1;
+            ctx.font = `bold ${fontSize}px Inter, system-ui, Arial`;
+          }
+          
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
           ctx.shadowBlur = 6;
           ctx.shadowOffsetX = 2;
           ctx.shadowOffsetY = 2;
-          ctx.fillText(b.label || '', b.x + b.w / 2, b.y + b.h / 2);
+          ctx.fillText(label, b.x + b.w / 2, b.y + b.h / 2);
           ctx.shadowColor = 'transparent';
           ctx.shadowBlur = 0;
           ctx.shadowOffsetX = 0;
@@ -648,20 +745,36 @@ function showFeedback(isCorrect, selectedIndex) {
         
         // Draw correct answer label in white with green glow
         ctx.fillStyle = 'white';
-        ctx.font = 'bold 32px Inter, system-ui, Arial';
+        
+        // Dynamic font sizing for correct answer with glow
+        const correctLabel = correctBox.label || '';
+        const correctMaxWidth = correctBox.w - 20;
+        let correctFontSize = isMobile ? 22 : 32;
+        ctx.font = `bold ${correctFontSize}px Inter, system-ui, Arial`;
+        
+        // Reduce font size until text fits
+        while (ctx.measureText(correctLabel).width > correctMaxWidth && correctFontSize > 10) {
+          correctFontSize -= 1;
+          ctx.font = `bold ${correctFontSize}px Inter, system-ui, Arial`;
+        }
+        
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.shadowColor = 'rgba(46, 224, 110, 1)';
         ctx.shadowBlur = 15;
-        ctx.fillText(correctBox.label || '', correctBox.x + correctBox.w / 2, correctBox.y + correctBox.h / 2);
+        ctx.fillText(correctLabel, correctBox.x + correctBox.w / 2, correctBox.y + correctBox.h / 2);
         ctx.shadowColor = 'transparent';
         ctx.shadowBlur = 0;
         
-        requestAnimationFrame(animateCorrectBox);
+        feedbackAnimationId = requestAnimationFrame(animateCorrectBox);
+      } else {
+        // Animation complete
+        feedbackAnimationActive = false;
+        feedbackAnimationId = null;
       }
     }
     
-    requestAnimationFrame(animateCorrectBox);
+    feedbackAnimationId = requestAnimationFrame(animateCorrectBox);
   }
   
   // Show feedback message
@@ -732,9 +845,13 @@ function restartQuiz() {
   questionIndex = 0;
   quizActive = false;
   currentUsername = '';
+  mpCamera = null;
   
-  // Show camera button again
+  // Reset camera button to initial state
   cameraBtn.classList.remove('hidden');
+  cameraBtn.classList.remove('loading');
+  cameraBtn.disabled = false;
+  cameraBtn.innerText = 'Open Camera';
   startQuizBtn.classList.add('hidden');
   questionBar.classList.add('hidden');
 }

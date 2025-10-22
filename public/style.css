@@ -187,7 +187,7 @@ body {
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  /* background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent); */
   transition: left 0.5s;
 }
 
@@ -634,7 +634,19 @@ body {
   border: 2px solid rgba(255, 255, 255, 0.2);
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
   max-width: 80%;
+  width: 90%;
+  white-space: normal;
+  line-height: 1.4;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (max-width: 1200px) {
+  #questionBar {
+    font-size: 20px;
+    padding: 16px 32px;
+    max-width: 80%;
+    width: 90%;
+  }
 }
 
 #questionBar.slide-up {
@@ -835,10 +847,11 @@ body {
   }
 
   #questionBar {
-    font-size: 16px;
-    padding: 12px 20px;
-    top: 15px;
+    font-size: 14px;
+    padding: 10px 16px;
+    top: 10px;
     max-width: 90%;
+    line-height: 1.3;
   }
 
   .btn {
@@ -889,7 +902,7 @@ body {
     padding: 14px;
     font-size: 16px;
     border-radius: 12px;
-    margin: 0;
+    margin: auto 0 0 150px;
   }
 
   .modal-buttons {
