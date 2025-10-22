@@ -640,6 +640,7 @@ body {
   object-fit: cover;
   z-index: 1;
   opacity: 0.85;
+  transform: scaleX(-1);
 }
 
 #overlay {

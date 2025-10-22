@@ -983,7 +983,8 @@ window.addEventListener('load', () => {
         const landmarks = results.multiHandLandmarks[0];
         const indexTip = landmarks[8]; // Index finger tip
         
-        const x = indexTip.x * appWidth;
+        // Flip x coordinate horizontally to match mirrored video
+        const x = (1 - indexTip.x) * appWidth;
         const y = indexTip.y * appHeight;
         const conf = indexTip.visibility || 0.8;
         
