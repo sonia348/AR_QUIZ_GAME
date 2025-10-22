@@ -24,6 +24,7 @@ const finalScoreDisplay = document.getElementById('finalScoreDisplay');
 const restartQuizBtn = document.getElementById('restartQuizBtn');
 const viewLeaderboardBtn = document.getElementById('viewLeaderboardBtn');
 const resetLeaderboardBtn = document.getElementById('resetLeaderboardBtn');
+const switchCameraBtn = document.getElementById('switchCameraBtn');
 
 // Game State Variables
 let appWidth, appHeight;
@@ -38,6 +39,7 @@ let readingCountdownValue = 0;
 let currentUsername = '';
 let feedbackAnimationActive = false;
 let feedbackAnimationId = null;
+let currentFacingMode = 'user'; // 'user' for front camera, 'environment' for back camera
 
 // Timer Variables
 let readingTimer = null;
@@ -202,9 +204,9 @@ function computeBoxes() {
   const cols = 3;
   const rows = 3;
   
-  // Adjust top margin based on screen size
+  // Adjust top margin based on screen size - reduced gap
   const isMobile = window.innerWidth <= 768;
-  const topMargin = isMobile ? 120 : 180;
+  const topMargin = isMobile ? 80 : 120;
   
   const boxW = (appWidth - padding * (cols + 1)) / cols;
   const boxH = (appHeight - topMargin - padding * (rows + 1)) / rows;
@@ -430,7 +432,7 @@ async function startCamera() {
       video: { 
         width: { ideal: 1280 },
         height: { ideal: 960 },
-        facingMode: 'user'
+        facingMode: currentFacingMode
       }, 
       audio: false 
     });
@@ -460,11 +462,12 @@ async function startCamera() {
     console.log('Starting MediaPipe camera...');
     await mpCamera.start();
     
-    // Hide camera button, show Start Quiz button
+    // Hide camera button, show Start Quiz and Switch Camera buttons
     cameraBtn.classList.remove('loading');
     cameraBtn.classList.add('hidden');
     startQuizBtn.classList.remove('hidden');
     startQuizBtn.classList.add('pulse');
+    switchCameraBtn.classList.remove('hidden');
     
     console.log('Camera started successfully');
   } catch (err) {
@@ -506,12 +509,37 @@ function startQuiz() {
   usernameInput.focus();
 }
 
+// Switch Camera (front/back)
+async function switchCamera() {
+  try {
+    // Toggle facing mode
+    currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+    
+    // Stop current camera
+    if (mpCamera && mpCamera.stop) {
+      mpCamera.stop();
+    }
+    if (video && video.srcObject) {
+      video.srcObject.getTracks().forEach(track => track.stop());
+    }
+    
+    // Restart camera with new facing mode
+    await startCamera();
+  } catch (error) {
+    console.error('Error switching camera:', error);
+    alert('Failed to switch camera. Your device may not have multiple cameras.');
+    // Revert to previous facing mode
+    currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+  }
+}
+
 // Actually start the quiz after username is entered
 function beginQuiz() {
   // Select new random 10 questions for this user
   selectRandomQuestions();
   
   startQuizBtn.classList.add('hidden');
+  switchCameraBtn.classList.add('hidden'); // Hide switch camera button during quiz
   questionIndex = 0;
   score = 0;
   scoreValueEl.innerText = score;
@@ -914,6 +942,8 @@ window.addEventListener('load', () => {
 // Event Listeners
 cameraBtn.addEventListener('click', startCamera);
 startQuizBtn.addEventListener('click', startQuiz);
+switchCameraBtn.addEventListener('click', switchCamera);
+
 if (lockAnswerBtn) {
   lockAnswerBtn.addEventListener('click', lockAnswer);
 }
