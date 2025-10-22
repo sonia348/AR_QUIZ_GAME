@@ -24,7 +24,6 @@ const finalScoreDisplay = document.getElementById('finalScoreDisplay');
 const restartQuizBtn = document.getElementById('restartQuizBtn');
 const viewLeaderboardBtn = document.getElementById('viewLeaderboardBtn');
 const resetLeaderboardBtn = document.getElementById('resetLeaderboardBtn');
-const switchCameraBtn = document.getElementById('switchCameraBtn');
 
 // Game State Variables
 let appWidth, appHeight;
@@ -40,6 +39,58 @@ let currentUsername = '';
 let feedbackAnimationActive = false;
 let feedbackAnimationId = null;
 let currentFacingMode = 'user'; // 'user' for front camera, 'environment' for back camera
+let lastHoveredBox = -1; // Track last hovered box for sound
+
+// Sound Effects - Using Web Audio API to generate sounds
+function playSound(type) {
+  const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  const oscillator = audioContext.createOscillator();
+  const gainNode = audioContext.createGain();
+  
+  oscillator.connect(gainNode);
+  gainNode.connect(audioContext.destination);
+  
+  // Different sounds for different actions
+  switch(type) {
+    case 'hover':
+      oscillator.frequency.value = 800;
+      oscillator.type = 'sine';
+      gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.1);
+      break;
+    case 'correct':
+      // Happy ascending chime
+      oscillator.frequency.value = 523; // C5
+      oscillator.type = 'sine';
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+      oscillator.start(audioContext.currentTime);
+      oscillator.frequency.exponentialRampToValueAtTime(784, audioContext.currentTime + 0.15); // G5
+      oscillator.stop(audioContext.currentTime + 0.3);
+      break;
+    case 'wrong':
+      // Descending error sound
+      oscillator.frequency.value = 300;
+      oscillator.type = 'sawtooth';
+      gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+      oscillator.start(audioContext.currentTime);
+      oscillator.frequency.exponentialRampToValueAtTime(150, audioContext.currentTime + 0.3);
+      oscillator.stop(audioContext.currentTime + 0.3);
+      break;
+    case 'tick':
+      // Quick tick sound
+      oscillator.frequency.value = 1000;
+      oscillator.type = 'square';
+      gainNode.gain.setValueAtTime(0.05, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.05);
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.05);
+      break;
+  }
+}
 
 // Timer Variables
 let readingTimer = null;
@@ -293,6 +344,11 @@ function drawOverlay(pointer) {
         if (pointer.x >= b.x && pointer.x <= b.x + b.w && 
             pointer.y >= b.y && pointer.y <= b.y + b.h) {
           isHovered = true;
+          // Play hover sound when entering a new box
+          if (lastHoveredBox !== index && b.label) {
+            playSound('hover');
+            lastHoveredBox = index;
+          }
           // Highlight hovered box with bright cyan
           ctx.fillStyle = 'rgba(0,210,255,0.35)';
           roundRect(ctx, b.x, b.y, b.w, b.h, 10, true, false);
@@ -462,12 +518,11 @@ async function startCamera() {
     console.log('Starting MediaPipe camera...');
     await mpCamera.start();
     
-    // Hide camera button, show Start Quiz and Switch Camera buttons
+    // Hide camera button, show Start Quiz button
     cameraBtn.classList.remove('loading');
     cameraBtn.classList.add('hidden');
     startQuizBtn.classList.remove('hidden');
     startQuizBtn.classList.add('pulse');
-    switchCameraBtn.classList.remove('hidden');
     
     console.log('Camera started successfully');
   } catch (err) {
@@ -509,132 +564,12 @@ function startQuiz() {
   usernameInput.focus();
 }
 
-// Switch Camera (front/back)
-async function switchCamera() {
-  if (!video || !video.srcObject) {
-    alert('Please start the camera first');
-    return;
-  }
-
-  try {
-    switchCameraBtn.disabled = true;
-    switchCameraBtn.innerText = 'Switching...';
-    
-    // Toggle facing mode
-    currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
-    
-    // Stop current camera and MediaPipe
-    if (mpCamera && mpCamera.stop) {
-      mpCamera.stop();
-      mpCamera = null;
-    }
-    if (video && video.srcObject) {
-      video.srcObject.getTracks().forEach(track => track.stop());
-      video.srcObject = null;
-    }
-    
-    // Small delay to ensure camera is released
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    // Try with exact constraint first, fallback to ideal if it fails
-    let stream;
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
-          width: { ideal: 1280 },
-          height: { ideal: 960 },
-          facingMode: { exact: currentFacingMode }
-        }, 
-        audio: false 
-      });
-    } catch (exactError) {
-      console.log('Exact facingMode failed, trying ideal:', exactError);
-      // Fallback to ideal constraint
-      stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
-          width: { ideal: 1280 },
-          height: { ideal: 960 },
-          facingMode: currentFacingMode
-        }, 
-        audio: false 
-      });
-    }
-    
-    video.srcObject = stream;
-    
-    // Wait for video to be ready
-    await new Promise((resolve) => {
-      video.onloadedmetadata = () => resolve();
-    });
-    
-    await video.play();
-    
-    // Restart MediaPipe
-    mpCamera = new window.Camera(video, {
-      onFrame: async () => {
-        await hands.send({ image: video });
-      },
-      width: 1280,
-      height: 960
-    });
-    
-    await mpCamera.start();
-    
-    switchCameraBtn.disabled = false;
-    switchCameraBtn.innerText = '🔄 Switch Camera';
-    
-    console.log(`Switched to ${currentFacingMode} camera`);
-  } catch (error) {
-    console.error('Error switching camera:', error);
-    
-    // Revert to previous facing mode
-    currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
-    
-    // Try to restart with original camera
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
-          width: { ideal: 1280 },
-          height: { ideal: 960 },
-          facingMode: currentFacingMode
-        }, 
-        audio: false 
-      });
-      
-      video.srcObject = stream;
-      
-      await new Promise((resolve) => {
-        video.onloadedmetadata = () => resolve();
-      });
-      
-      await video.play();
-      
-      mpCamera = new window.Camera(video, {
-        onFrame: async () => {
-          await hands.send({ image: video });
-        },
-        width: 1280,
-        height: 960
-      });
-      
-      await mpCamera.start();
-    } catch (restartError) {
-      console.error('Error restarting camera:', restartError);
-    }
-    
-    switchCameraBtn.disabled = false;
-    switchCameraBtn.innerText = '🔄 Switch Camera';
-    alert('Failed to switch camera. Your device may not have a back camera or it may be in use by another app.');
-  }
-}
-
 // Actually start the quiz after username is entered
 function beginQuiz() {
   // Select new random 10 questions for this user
   selectRandomQuestions();
   
   startQuizBtn.classList.add('hidden');
-  switchCameraBtn.classList.add('hidden'); // Hide switch camera button during quiz
   questionIndex = 0;
   score = 0;
   scoreValueEl.innerText = score;
@@ -701,6 +636,9 @@ function showAnswerOptions(question) {
     feedbackAnimationId = null;
   }
   
+  // Reset hover tracking
+  lastHoveredBox = -1;
+  
   // Fill boxes with answers
   for (let i = 0; i < 9; i++) {
     boxes[i].label = question.answers[i] || "";
@@ -727,6 +665,11 @@ function showAnswerOptions(question) {
   answerTimer = setInterval(() => {
     currentAnswerTime--;
     timerBar.innerText = `${currentAnswerTime}s`;
+    
+    // Play tick sound for last 5 seconds
+    if (currentAnswerTime <= 5 && currentAnswerTime > 0) {
+      playSound('tick');
+    }
     
     if (currentAnswerTime <= 0) {
       clearInterval(answerTimer);
@@ -763,8 +706,10 @@ function lockAnswer() {
   if (selectedBox && selectedBox.isCorrect) {
     score++;
     scoreValueEl.innerText = score;
+    playSound('correct');
     showFeedback(true, selectedIndex);
   } else {
+    playSound('wrong');
     showFeedback(false, selectedIndex);
   }
   
@@ -1038,7 +983,6 @@ window.addEventListener('load', () => {
 // Event Listeners
 cameraBtn.addEventListener('click', startCamera);
 startQuizBtn.addEventListener('click', startQuiz);
-switchCameraBtn.addEventListener('click', switchCamera);
 
 if (lockAnswerBtn) {
   lockAnswerBtn.addEventListener('click', lockAnswer);
