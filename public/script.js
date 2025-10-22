@@ -533,17 +533,40 @@ async function switchCamera() {
       video.srcObject = null;
     }
     
-    // Get new camera stream with updated facing mode
-    const stream = await navigator.mediaDevices.getUserMedia({ 
-      video: { 
-        width: { ideal: 1280 },
-        height: { ideal: 960 },
-        facingMode: { exact: currentFacingMode }
-      }, 
-      audio: false 
-    });
+    // Small delay to ensure camera is released
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // Try with exact constraint first, fallback to ideal if it fails
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          width: { ideal: 1280 },
+          height: { ideal: 960 },
+          facingMode: { exact: currentFacingMode }
+        }, 
+        audio: false 
+      });
+    } catch (exactError) {
+      console.log('Exact facingMode failed, trying ideal:', exactError);
+      // Fallback to ideal constraint
+      stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          width: { ideal: 1280 },
+          height: { ideal: 960 },
+          facingMode: currentFacingMode
+        }, 
+        audio: false 
+      });
+    }
     
     video.srcObject = stream;
+    
+    // Wait for video to be ready
+    await new Promise((resolve) => {
+      video.onloadedmetadata = () => resolve();
+    });
+    
     await video.play();
     
     // Restart MediaPipe
@@ -579,6 +602,11 @@ async function switchCamera() {
       });
       
       video.srcObject = stream;
+      
+      await new Promise((resolve) => {
+        video.onloadedmetadata = () => resolve();
+      });
+      
       await video.play();
       
       mpCamera = new window.Camera(video, {
