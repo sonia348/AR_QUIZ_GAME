@@ -274,6 +274,40 @@ body {
   box-shadow: 0 14px 36px rgba(139, 92, 246, 0.5);
 }
 
+.btn-lock {
+  background: linear-gradient(135deg, #2ee06e 0%, #10b981 100%);
+  color: white;
+  width: 100%;
+  margin-top: 10px;
+}
+
+.btn-lock:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 36px rgba(46, 224, 110, 0.5);
+}
+
+.btn-lock:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Button Row for Leaderboard and Lock Answer */
+.button-row {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.button-row .btn {
+  flex: 1;
+  margin-top: 0;
+  padding: 14px 8px;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* Modals */
 .modal {
   position: fixed;
@@ -606,7 +640,6 @@ body {
   object-fit: cover;
   z-index: 1;
   opacity: 0.85;
-  transform: scaleX(-1);
 }
 
 #overlay {

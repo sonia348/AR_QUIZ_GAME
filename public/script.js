@@ -511,25 +511,92 @@ function startQuiz() {
 
 // Switch Camera (front/back)
 async function switchCamera() {
+  if (!video || !video.srcObject) {
+    alert('Please start the camera first');
+    return;
+  }
+
   try {
+    switchCameraBtn.disabled = true;
+    switchCameraBtn.innerText = 'Switching...';
+    
     // Toggle facing mode
     currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
     
-    // Stop current camera
+    // Stop current camera and MediaPipe
     if (mpCamera && mpCamera.stop) {
       mpCamera.stop();
+      mpCamera = null;
     }
     if (video && video.srcObject) {
       video.srcObject.getTracks().forEach(track => track.stop());
+      video.srcObject = null;
     }
     
-    // Restart camera with new facing mode
-    await startCamera();
+    // Get new camera stream with updated facing mode
+    const stream = await navigator.mediaDevices.getUserMedia({ 
+      video: { 
+        width: { ideal: 1280 },
+        height: { ideal: 960 },
+        facingMode: { exact: currentFacingMode }
+      }, 
+      audio: false 
+    });
+    
+    video.srcObject = stream;
+    await video.play();
+    
+    // Restart MediaPipe
+    mpCamera = new window.Camera(video, {
+      onFrame: async () => {
+        await hands.send({ image: video });
+      },
+      width: 1280,
+      height: 960
+    });
+    
+    await mpCamera.start();
+    
+    switchCameraBtn.disabled = false;
+    switchCameraBtn.innerText = '🔄 Switch Camera';
+    
+    console.log(`Switched to ${currentFacingMode} camera`);
   } catch (error) {
     console.error('Error switching camera:', error);
-    alert('Failed to switch camera. Your device may not have multiple cameras.');
+    
     // Revert to previous facing mode
     currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+    
+    // Try to restart with original camera
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          width: { ideal: 1280 },
+          height: { ideal: 960 },
+          facingMode: currentFacingMode
+        }, 
+        audio: false 
+      });
+      
+      video.srcObject = stream;
+      await video.play();
+      
+      mpCamera = new window.Camera(video, {
+        onFrame: async () => {
+          await hands.send({ image: video });
+        },
+        width: 1280,
+        height: 960
+      });
+      
+      await mpCamera.start();
+    } catch (restartError) {
+      console.error('Error restarting camera:', restartError);
+    }
+    
+    switchCameraBtn.disabled = false;
+    switchCameraBtn.innerText = '🔄 Switch Camera';
+    alert('Failed to switch camera. Your device may not have a back camera or it may be in use by another app.');
   }
 }
 
