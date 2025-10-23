@@ -117,7 +117,7 @@ body {
 /* Instructions */
 #instructions {
   background: rgba(255, 255, 255, 0.08);
-  padding: 20px;
+  padding: 15px;
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.15);
   margin-top: auto;
@@ -153,13 +153,13 @@ body {
 
 #instructions ol {
   padding-left: 20px;
-  font-size: 14px;
-  line-height: 1.8;
+  font-size: 13px;
+  line-height: 1.6;
   opacity: 0.9;
 }
 
 #instructions li {
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 /* Buttons */
