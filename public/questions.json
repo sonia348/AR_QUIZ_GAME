@@ -20,14 +20,14 @@
     "wrongAnswers": ["Base", "Height", "Median", "Altitude", "Bisector", "Side", "Diagonal", "None"]
   },
   {
-    "question": "The statement of Pythagoras Theorem is:",
+    "question": "The statement of Pythagoras' Theorem is:",
     "correctAnswer": "a² + b² = c²",
     "wrongAnswers": ["a² = b² + c²", "a + b = c", "2a + b = c²", "a² – b² = c²", "c² = ab", "a + b + c = 180", "a²b = c", "None"]
   },
   {
-    "question": "Pythagoras was a:",
-    "correctAnswer": "All of these",
-    "wrongAnswers": ["Mathematician", "Philosopher", "Musician", "Scientist", "Priest", "Teacher", "Artist", "Merchant"]
+    "question": "The sum of all interior angles of a triangle is:",
+    "correctAnswer": "180°",
+    "wrongAnswers": ["90°", "120°", "150°", "160°", "170°", "175°", "270°", "360°"]
   },
   {
     "question": "The theorem relates which three sides of a right triangle?",
@@ -115,9 +115,9 @@
     "wrongAnswers": ["Right", "Acute", "Isosceles", "Scalene", "Equal", "None", "Parallel", "Rectangle"]
   },
   {
-    "question": "The theorem helps to find the distance between:",
-    "correctAnswer": "Two points",
-    "wrongAnswers": ["Two circles", "Two lines", "Two squares", "Two cubes", "Two planes", "Two objects", "Two parallel lines", "Two centers"]
+    "question": "The sum of all exterior angles of a triangle is:",
+    "correctAnswer": "360°",
+    "wrongAnswers": ["90°", "120°", "180°", "270°", "300°", "330°", "400°", "500°"]
   },
   {
     "question": "Example of a Pythagorean triplet is:",
@@ -130,22 +130,22 @@
     "wrongAnswers": ["6,8,10", "5,12,13", "7,24,25", "8,15,17", "12,16,20", "9,40,41", "10,15,20", "20,21,29"]
   },
   {
+    "question": "The adjacent interior and exterior angles are called:",
+    "correctAnswer": "Linear pair",
+    "wrongAnswers": ["Complementary", "Supplementary", "Equal", "Alternate", "Reflex", "Corresponding", "Opposite", "None"]
+  },
+  {
     "question": "The term “triplet” means:",
     "correctAnswer": "Three numbers",
     "wrongAnswers": ["Two numbers", "Four numbers", "Equal numbers", "Angles", "Sides", "Ratios", "Medians", "Lines"]
   },
   {
-    "question": "The Indian mathematician who gave proof of theorem:",
-    "correctAnswer": "Bhaskara",
-    "wrongAnswers": ["Aryabhata", "Brahmagupta", "All", "Ramanujan", "Varahamihira", "Apastamba", "Charaka", "None"]
+    "question": "The triangle with two equal sides and one right angle is:",
+    "correctAnswer": "Isosceles right triangle",
+    "wrongAnswers": ["Scalene", "Obtuse", "Equilateral", "Reflex", "None", "Acute", "Parallel", "Symmetric"]
   },
   {
-    "question": "The theorem is used in which coordinate formula?",
-    "correctAnswer": "Distance formula",
-    "wrongAnswers": ["Midpoint", "Section", "Slope", "Intercept", "Equation", "Ratio", "None", "Angle bisector"]
-  },
-  {
-    "question": "The theorem connects ________ and ________ of triangles.",
+    "question": "The theorem connects sides and angles of triangles.",
     "correctAnswer": "Sides, angles",
     "wrongAnswers": ["Area, perimeter", "Height, base", "Volume, ratio", "None", "Diagonal, radius", "Length, breadth", "Circumference, arc", "None"]
   },
